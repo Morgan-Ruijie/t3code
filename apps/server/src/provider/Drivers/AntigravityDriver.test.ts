@@ -350,7 +350,7 @@ it.layer(layerTest)("AntigravityDriver", (it) => {
             "antigravity-acp",
           ]);
           expect(launch.profileDirectory).toBe(h.profileDirectory);
-          expect(launch.forceFileStorage).toBe("1");
+          expect(launch.forceFileStorage).toBeUndefined();
           expect(launch.extendEnv).toBe(false);
         }
         for (const launch of h.launches) expect(launch.credentialKeys).toEqual([]);

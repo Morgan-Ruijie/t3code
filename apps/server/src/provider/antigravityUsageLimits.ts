@@ -887,11 +887,6 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
   const path = yield* Path.Path;
   const crypto = yield* Digest.Digest;
   const probeGate = yield* Semaphore.make(1);
-  const cliTokenPath = path.join(
-    input.profileDirectory,
-    "antigravity-acp",
-    "antigravity-oauth-token",
-  );
   const runCliUsage =
     input.runCliUsage ??
     ((args: AntigravityCliUsageRunInput) => runOfficialAgyUsagePty(args).pipe(Effect.scoped));
@@ -938,23 +933,8 @@ export const makeAntigravityUsageProbe = Effect.fn("makeAntigravityUsageProbe")(
       });
     }
 
-    // Personal OAuth profiles isolate sign-ins per profile directory via file token storage;
-    // do not fall through to a standalone host sign-in when the profile is unsigned-in.
-    // Enterprise (`oauth-business`) instances do not force file storage and may keep credentials
-    // exclusively in the OS keyring, so allow them to probe with their configured project.
-    if (input.authMethod === "oauth-personal") {
-      const hasProfileToken = yield* fs
-        .exists(cliTokenPath)
-        .pipe(Effect.orElseSucceed(() => false));
-      if (!hasProfileToken) {
-        return makeUnavailableUsageLimits({
-          checkedAt,
-          reason: "unsupported",
-          message: "Sign in with Google to see Antigravity limits.",
-        });
-      }
-    }
-
+    // With native OS keyring storage enabled, signed-in OAuth profiles do not write a plaintext
+    // antigravity-oauth-token file; let the official CLI read credentials from the OS keyring.
     const rawOutput = yield* Effect.scoped(
       Effect.gen(function* () {
         // Hold any installation lease and isolated home through PTY exit.

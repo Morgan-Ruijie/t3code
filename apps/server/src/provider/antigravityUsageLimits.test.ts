@@ -581,26 +581,26 @@ describe("makeAntigravityUsageProbe (official CLI)", () => {
   );
 
   it.effect(
-    "returns unsupported without launching CLI for an unsigned-in oauth-personal profile",
+    "probes native OS keyring oauth-personal profiles when no plaintext token file exists",
     () =>
       Effect.gen(function* () {
         const fs = yield* FileSystem.FileSystem;
         const profileDirectory = yield* fs.makeTempDirectoryScoped();
-        let calls = 0;
+        const invocations: AntigravityCliUsageRunInput[] = [];
 
         const usage = yield* makeAntigravityUsageProbe({
           profileDirectory,
           authMethod: "oauth-personal",
-          runCliUsage: () => {
-            calls++;
+          runCliUsage: (args) => {
+            invocations.push(args);
             return Effect.succeed(SAMPLE_CLI_OUTPUT);
           },
         });
 
         const limits = yield* usage.probe;
-        expect(calls).toBe(0);
-        expect(limits.unavailable?.reason).toBe("unsupported");
-        expect(limits.windows).toEqual([]);
+        expect(invocations).toHaveLength(1);
+        expect(limits.unavailable).toBeUndefined();
+        expect(limits.windows).toHaveLength(4);
       }).pipe(Effect.scoped, Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
